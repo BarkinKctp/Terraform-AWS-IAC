@@ -30,7 +30,7 @@ This repository deploys a small AWS stack with Terraform using:
 
 Configure credentials:
 
-```powershell
+```bash
 aws configure
 ```
 
@@ -43,15 +43,15 @@ Enter:
 
 Verify identity:
 
-```powershell
+```bash
 aws sts get-caller-identity
 ```
 
 ## 1) Bootstrap Backend (One-Time)
 
-```powershell
+```bash
 cd bootstrap
-Copy-Item terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars
 ```
 
 Edit `bootstrap/terraform.tfvars` and set a globally unique value:
@@ -62,7 +62,7 @@ state_bucket_name = "<your-unique-state-bucket-name>"
 
 Then run:
 
-```powershell
+```bash
 terraform init
 terraform apply
 ```
@@ -71,7 +71,7 @@ terraform apply
 
 Bootstrap already outputs the exact command:
 
-```powershell
+```bash
 cd bootstrap
 terraform output -raw backend_init_command
 ```
@@ -87,9 +87,9 @@ What this does:
 
 Return to project root, then run:
 
-```powershell
+```bash
 cd ..
-Copy-Item terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars
 ```
 
 Edit `terraform.tfvars` and set values:
@@ -109,7 +109,7 @@ Important:
 
 Run from project root:
 
-```powershell
+```bash
 terraform plan
 terraform apply
 ```
@@ -121,7 +121,7 @@ Notes:
 
 ## 5) Access Outputs
 
-```powershell
+```bash
 terraform output app_url
 terraform output alb_dns_name
 ```
@@ -146,7 +146,7 @@ Quick links:
 
 Run from project root:
 
-```powershell
+```bash
 terraform destroy -lock-timeout=60s
 ```
 
@@ -157,7 +157,7 @@ Use this only when fully done and cleanup is required.
 1. Destroy root resources first.
 2. Then destroy bootstrap:
 
-```powershell
+```bash
 cd bootstrap
 terraform destroy
 ```
