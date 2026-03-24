@@ -1,0 +1,5 @@
+state_bucket_name   = "<your-unique-state-bucket-name>"
+
+# Optional overrides:
+# aws_region          = "eu-west-1"
+# dynamodb_table_name = "terraform-locks"
