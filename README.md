@@ -1,41 +1,63 @@
 # Terraform AWS IaC Project
 
-This project provisions a small AWS stack with Terraform and uses an S3 + DynamoDB backend for remote state.
+This repository deploys a small AWS stack with Terraform using:
 
-## What It Deploys
+- a one-time backend bootstrap (`bootstrap/`) for remote state
+- a root module (`main.tf`) that calls `modules/app_stack`
 
-- 2 EC2 instances running a Python HTTP server on port 8080
+## What Gets Deployed
+
+- 2 EC2 instances (web server on port 8080)
 - 1 Application Load Balancer (ALB) on port 80
-- 1 app S3 bucket (separate from the state bucket)
-- 1 PostgreSQL RDS instance (private, not publicly accessible)
+- 1 application S3 bucket
+- 1 PostgreSQL RDS instance (private)
 
-## Project Structure
+## Folder Layout
 
-- `bootstrap/`: one-time backend bootstrap (state bucket + lock table)
-- `modules/app_stack/`: reusable module containing app infrastructure resources
-- `main.tf` (root): orchestrates modules and backend settings
-- `provider.tf` (root): provider configuration shared by root and modules
-- `variables.tf` (root): input variables passed into modules
-- `otuputs.tf` (root): outputs exposed from module outputs
+- `bootstrap/`:
+  - creates backend resources (state S3 bucket + DynamoDB lock table)
+  - run once, then reuse
+- `modules/app_stack/`:
+  - contains actual app infrastructure resources
+- root (`main.tf`, `provider.tf`, `variables.tf`, `outputs.tf`):
+  - composes module(s), configures backend, exposes outputs
 
 ## Prerequisites
 
 - Terraform >= 1.5.7
-- AWS credentials configured locally (AWS CLI profile, env vars, or SSO)
+- AWS CLI installed
+- AWS credentials configured
+
+Configure credentials:
+
+```powershell
+aws configure
+```
+
+Enter:
+
+- `AWS Access Key ID`
+- `AWS Secret Access Key` (not AWS account password)
+- `Default region name` (use `eu-west-1` for this project)
+- `Default output format` (for example `json`)
+
+Verify identity:
+
+```powershell
+aws sts get-caller-identity
+```
 
 ## 1) Bootstrap Backend (One-Time)
-
-From the bootstrap folder:
 
 ```powershell
 cd bootstrap
 Copy-Item terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `bootstrap/terraform.tfvars` and set:
+Edit `bootstrap/terraform.tfvars` and set a globally unique value:
 
 ```hcl
-state_bucket_name = "<unique_s3_bucket_name_for_terraform_state>"
+state_bucket_name = "<your-unique-state-bucket-name>"
 ```
 
 Then run:
@@ -45,59 +67,116 @@ terraform init
 terraform apply
 ```
 
-Get backend init values:
+## 2) Initialize Root Backend
+
+Bootstrap already outputs the exact command:
 
 ```powershell
-terraform output
+cd bootstrap
+terraform output -raw backend_init_command
 ```
 
-## 2) Initialize Root Project Backend
+Copy that output and run it from project root.
 
-From the project root, run:
+What this does:
 
-```powershell
-terraform init `
-  -backend-config="bucket=<state_bucket_name_from_bootstrap>" `
-  -backend-config="key=terraform-project/terraform.tfstate" `
-  -backend-config="region=<aws_region_from_bootstrap>" `
-  -backend-config="dynamodb_table=<dynamodb_table_name_from_bootstrap>" `
-  -backend-config="encrypt=true"
-```
+- tells root Terraform to store state in the backend S3 bucket
+- uses DynamoDB for state locking
 
-## 3) Configure App Variables
+## 3) Configure Root Variables
 
-From the project root:
+Return to project root, then run:
 
 ```powershell
+cd ..
 Copy-Item terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars` and set values for:
+Edit `terraform.tfvars` and set values:
 
 - `app_bucket_name`
 - `db_name`
 - `db_username`
 - `db_password`
-- optionally `aws_region`
+- optional: `aws_region`, `ec2_instance_type`
+
+Important:
+
+- If `terraform.tfvars` exists with required values, Terraform will not prompt.
+- If required values are missing, Terraform will prompt at runtime.
 
 ## 4) Deploy
+
+Run from project root:
 
 ```powershell
 terraform plan
 terraform apply
 ```
 
-## 5) Access the App
+Notes:
 
-After apply:
+- RDS can take several minutes to create.
+- If account restrictions block a specific EC2 size, set `ec2_instance_type` in `terraform.tfvars`.
+
+## 5) Access Outputs
 
 ```powershell
 terraform output app_url
+terraform output alb_dns_name
 ```
 
-Open the output URL in a browser.
+## 6) View in AWS Console (Portal)
 
-## Notes
+After deploy, open AWS Console in the same region used by Terraform and verify created resources:
+
+- EC2: 2 running instances
+- Load Balancer: 1 ALB with a DNS name
+- RDS: 1 PostgreSQL DB instance (private)
+- S3: 1 application bucket
+
+Quick links:
+
+- `https://console.aws.amazon.com/ec2/home`
+- `https://console.aws.amazon.com/ec2/home#LoadBalancers:`
+- `https://console.aws.amazon.com/rds/home`
+- `https://s3.console.aws.amazon.com/s3/home`
+
+## 7) Destroy App Resources
+
+Run from project root:
+
+```powershell
+terraform destroy -lock-timeout=60s
+```
+
+## 8) Optional: Destroy Backend Resources
+
+Use this only when fully done and cleanup is required.
+
+1. Destroy root resources first.
+2. Then destroy bootstrap:
+
+```powershell
+cd bootstrap
+terraform destroy
+```
+
+Backend behavior:
+
+- backend state bucket is `force_destroy = false`
+- it must be empty (including versions/delete markers) before it can be destroyed
+
+## Module Behavior
+
+Deploy from root directly.
+
+- Root `main.tf` calls `module "app_stack"`.
+- Terraform loads module variables, resources, and outputs automatically during root `plan/apply`.
+
+## General Notes
 
 - Keep backend state bucket and app bucket names different and globally unique.
-- The current demo app serves a static `Hello, World!` page.
+- Use `terraform.tfvars` to avoid runtime prompts for required variables.
+- Run deploy and destroy from project root; use `bootstrap/` only for backend setup/teardown.
+- Some resources (especially RDS and ALB) take longer to create or destroy.
