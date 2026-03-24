@@ -10,11 +10,11 @@ output "dynamodb_table_name" {
 
 output "backend_init_command" {
   value = <<-EOT
-    terraform init \
-      -backend-config="bucket=${aws_s3_bucket.terraform_state.bucket}" \
-      -backend-config="key=terraform-project/terraform.tfstate" \
-      -backend-config="region=${var.aws_region}" \
-      -backend-config="dynamodb_table=${aws_dynamodb_table.terraform_locks.name}" \
+    terraform init `
+      -backend-config="bucket=${aws_s3_bucket.terraform_state.bucket}" `
+      -backend-config="key=terraform-project/terraform.tfstate" `
+      -backend-config="region=${var.aws_region}" `
+      -backend-config="dynamodb_table=${aws_dynamodb_table.terraform_locks.name}" `
       -backend-config="encrypt=true"
   EOT
 }

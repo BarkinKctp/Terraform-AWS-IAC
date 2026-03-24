@@ -25,3 +25,9 @@ variable "db_password" {
   type        = string
   sensitive   = true
 }
+
+variable "ec2_instance_type" {
+  description = "EC2 instance type for web instances"
+  type        = string
+  default     = "t3.micro"
+}

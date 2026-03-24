@@ -1,6 +1,26 @@
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023*-x86_64"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+}
+
 resource "aws_instance" "instance_1" {
-  ami                    = "ami-0c55b159cbfafe1f0"
-  instance_type          = "t2.micro"
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.ec2_instance_type
   vpc_security_group_ids = [aws_security_group.instances.id]
   user_data              = <<-EOF
               #!/bin/bash
@@ -16,8 +36,8 @@ resource "aws_instance" "instance_1" {
 }
 
 resource "aws_instance" "instance_2" {
-  ami                    = "ami-0c55b159cbfafe1f0"
-  instance_type          = "t2.micro"
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = var.ec2_instance_type
   vpc_security_group_ids = [aws_security_group.instances.id]
   user_data              = <<-EOF
               #!/bin/bash
@@ -187,7 +207,7 @@ resource "aws_db_instance" "db_instance" {
   storage_type           = "standard"
   engine                 = "postgres"
   engine_version         = "16"
-  instance_class         = "db.t2.micro"
+  instance_class         = "db.t3.micro"
   identifier             = var.db_name
   username               = var.db_username
   password               = var.db_password

@@ -18,4 +18,5 @@ module "app_stack" {
   db_name         = var.db_name
   db_username     = var.db_username
   db_password     = var.db_password
+  ec2_instance_type = var.ec2_instance_type
 }
