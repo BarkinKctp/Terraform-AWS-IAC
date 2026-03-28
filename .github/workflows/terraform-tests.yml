@@ -1,0 +1,88 @@
+name: Terraform Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+      - '.github/workflows/terraform-tests.yml'
+
+jobs:
+  terraform:
+    name: Terraform Format & Validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.7
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        
+      - name: Terraform Init (Bootstrap)
+        working-directory: ./bootstrap
+        run: terraform init -backend=false
+        
+      - name: Terraform Validate (Bootstrap)
+        working-directory: ./bootstrap
+        run: terraform validate
+
+      - name: Terraform Init (Root)
+        run: terraform init -backend=false
+        
+      - name: Terraform Validate (Root)
+        run: terraform validate
+
+      - name: Terraform Plan (Root)
+        env:
+          AWS_REGION: eu-west-1
+        run: terraform plan -lock=false -input=false
+
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache plugin directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('.tflint.hcl') }}
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Show TFLint version
+        run: tflint --version
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint (Bootstrap)
+        working-directory: ./bootstrap
+        run: tflint --format compact
+        continue-on-error: true
+
+      - name: Run TFLint (Root)
+        run: tflint --format compact
+        continue-on-error: true
+
+      - name: Run TFLint (Modules)
+        working-directory: ./modules/app_stack
+        run: tflint --format compact
+        continue-on-error: true
