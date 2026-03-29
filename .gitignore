@@ -1,15 +1,18 @@
 *.tfstate
 *.tfstate.backup
 
-
 .terraform/
+.terraform.tfstate.lock.info
+.terraform.tfstate*
 
 .env
 terraform.tfvars
 
 crash.log
-
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+
+

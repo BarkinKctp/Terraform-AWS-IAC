@@ -1,4 +1,6 @@
-state_bucket_name   = "<your-unique-state-bucket-name>"
+# This bucket name MUST match the hardcoded backend value in ../main.tf
+# The GitHub Actions workflow expects this bucket to exist
+state_bucket_name   = "terraform-backend-bucket-aws-26"
 
 # Optional overrides:
 # aws_region          = "eu-west-1"

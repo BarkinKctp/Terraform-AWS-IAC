@@ -47,136 +47,53 @@ Verify identity:
 aws sts get-caller-identity
 ```
 
+## GitHub Actions Workflows
+
+**Test Workflow** (`.github/workflows/terraform-tests.yml`): Validates format, syntax, plan, linting on every push/PR. No AWS credentials needed.
+
+**Deploy Workflow** (`.github/workflows/terraform-deploy.yml`): Deploys on push to `main` or manual trigger. Requires AWS OIDC setup.
+
+**AWS OIDC Setup (One-Time):**
+1. AWS Console: IAM → Identity Providers → Create OIDC provider
+   - URL: `https://token.actions.githubusercontent.com`, Audience: `sts.amazonaws.com`
+2. Create IAM role `terraform-github-actions` with Terraform permissions
+3. GitHub: Repo → Settings → Environments → production → Add secret `AWS_ACCOUNT_ID`
+
 ## 1) Bootstrap Backend (One-Time)
 
 ```bash
 cd bootstrap
 cp terraform.tfvars.example terraform.tfvars
-```
-
-Edit `bootstrap/terraform.tfvars` and set a globally unique value:
-
-```hcl
-state_bucket_name = "<your-unique-state-bucket-name>"
-```
-
-Then run:
-
-```bash
+# Edit terraform.tfvars, verify state_bucket_name = "terraform-backend-bucket-aws-26"
 terraform init
 terraform apply
 ```
 
-## 2) Initialize Root Backend
-
-Bootstrap already outputs the exact command:
-
-```bash
-cd bootstrap
-terraform output -raw backend_init_command
-```
-
-Copy that output and run it from project root.
-
-What this does:
-
-- tells root Terraform to store state in the backend S3 bucket
-- uses DynamoDB for state locking
-
-## 3) Configure Root Variables
-
-Return to project root, then run:
+## 2) Deploy Root
 
 ```bash
 cd ..
 cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your app configuration
+terraform init
+terraform plan && terraform apply
 ```
 
-Edit `terraform.tfvars` and set values:
-
-- `app_bucket_name`
-- `db_name`
-- `db_username`
-- `db_password`
-- optional: `aws_region`, `ec2_instance_type`
-
-Important:
-
-- If `terraform.tfvars` exists with required values, Terraform will not prompt.
-- If required values are missing, Terraform will prompt at runtime.
-
-## 4) Deploy
-
-Run from project root:
+## 3) View Outputs & Verify
 
 ```bash
-terraform plan
-terraform apply
+terraform output  # See all outputs
 ```
 
-Notes:
+Check AWS Console (EC2, ALB, RDS, S3) to verify resources.
 
-- RDS can take several minutes to create.
-- If account restrictions block a specific EC2 size, set `ec2_instance_type` in `terraform.tfvars`.
-
-## 5) Access Outputs
+## Cleanup
 
 ```bash
-terraform output app_url
-terraform output alb_dns_name
-```
-
-## 6) View in AWS Console (Portal)
-
-After deploy, open AWS Console in the same region used by Terraform and verify created resources:
-
-- EC2: 2 running instances
-- Load Balancer: 1 ALB with a DNS name
-- RDS: 1 PostgreSQL DB instance (private)
-- S3: 1 application bucket
-
-Quick links:
-
-- `https://console.aws.amazon.com/ec2/home`
-- `https://console.aws.amazon.com/ec2/home#LoadBalancers:`
-- `https://console.aws.amazon.com/rds/home`
-- `https://s3.console.aws.amazon.com/s3/home`
-
-## 7) Destroy App Resources
-
-Run from project root:
-
-```bash
-terraform destroy -lock-timeout=60s
-```
-
-## 8) Optional: Destroy Backend Resources
-
-Use this only when fully done and cleanup is required.
-
-1. Destroy root resources first.
-2. Then destroy bootstrap:
-
-```bash
-cd bootstrap
+# Destroy app resources
 terraform destroy
+
+# Destroy backend (when completely done)
+cd bootstrap
+terraform destroy  # Bucket must be empty
 ```
-
-Backend behavior:
-
-- backend state bucket is `force_destroy = false`
-- it must be empty (including versions/delete markers) before it can be destroyed
-
-## Module Behavior
-
-Deploy from root directly.
-
-- Root `main.tf` calls `module "app_stack"`.
-- Terraform loads module variables, resources, and outputs automatically during root `plan/apply`.
-
-## General Notes
-
-- Keep backend state bucket and app bucket names different and globally unique.
-- Use `terraform.tfvars` to avoid runtime prompts for required variables.
-- Run deploy and destroy from project root; use `bootstrap/` only for backend setup/teardown.
-- Some resources (especially RDS and ALB) take longer to create or destroy.
