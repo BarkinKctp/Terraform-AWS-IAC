@@ -53,11 +53,15 @@ aws sts get-caller-identity
 
 **Deploy Workflow** (`.github/workflows/terraform-deploy.yml`): Deploys on push to `main` or manual trigger. Requires AWS OIDC setup.
 
+The workflow uses defaults from `variables.tf` for non-sensitive values (app_bucket_name, db_name, etc.) and requires only the database password as a GitHub secret.
+
 **AWS OIDC Setup (One-Time):**
 1. AWS Console: IAM → Identity Providers → Create OIDC provider
    - URL: `https://token.actions.githubusercontent.com`, Audience: `sts.amazonaws.com`
 2. Create IAM role `terraform-github-actions` with Terraform permissions
-3. GitHub: Repo → Settings → Environments → production → Add secret `AWS_ACCOUNT_ID`
+3. GitHub: Repo → Settings → Environments → production
+   - Add secret: `AWS_ACCOUNT_ID` = your 12-digit AWS account ID
+   - Add secret: `DB_PASSWORD` = your database password
 
 ## 1) Bootstrap Backend (One-Time)
 
@@ -69,12 +73,30 @@ terraform init
 terraform apply
 ```
 
-## 2) Deploy Root
+## 2) Deploy Root (Local Development)
 
 ```bash
 cd ..
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your app configuration
+```
+
+**Edit terraform.tfvars if you want custom values:**
+```hcl
+# Override defaults if needed
+app_bucket_name = "my-unique-prod-bucket"  # MUST be globally unique
+db_name         = "proddb"
+db_username     = "dbadmin"
+db_password     = "your-secure-password"
+ec2_instance_type = "t3.micro"
+```
+
+**Notes:**
+- `app_bucket_name` MUST be globally unique (S3 buckets are global)
+- If you don't create terraform.tfvars, defaults from variables.tf are used
+- GitHub Actions uses defaults from variables.tf + DB_PASSWORD secret (no tfvars needed)
+
+Then deploy:
+```bash
 terraform init
 terraform plan && terraform apply
 ```

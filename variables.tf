@@ -7,17 +7,19 @@ variable "aws_region" {
 variable "app_bucket_name" {
   description = "Globally unique S3 bucket name for the application bucket"
   type        = string
+  default     = "terraform-app-bucket-prod"
 }
 
 variable "db_name" {
   description = "Identifier for the RDS instance"
   type        = string
+  default     = "proddb"
 }
 
 variable "db_username" {
   description = "Username for the RDS instance"
   type        = string
-  sensitive   = true
+  default     = "dbadmin"
 }
 
 variable "db_password" {

@@ -42,7 +42,9 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -out=tfplan -no-color
+        run: |
+          terraform plan -out=tfplan -no-color -input=false \
+            -var="db_password=${{ secrets.DB_PASSWORD }}"
         
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
