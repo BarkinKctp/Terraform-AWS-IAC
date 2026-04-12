@@ -1,6 +1,6 @@
-[![HCL](https://img.shields.io/badge/HCL-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
-[![AWS](https://img.shields.io/badge/AWS-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
-[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Terraform](https://img.shields.io/badge/Terraform-%3E%3D1.5.7-623CE4)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/cloud-AWS-FF9900)](https://aws.amazon.com/)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-black)
 
 # Terraform AWS IaC Project
 
