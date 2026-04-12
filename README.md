@@ -1,3 +1,7 @@
+[![HCL](https://img.shields.io/badge/HCL-623CE4?logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![AWS](https://img.shields.io/badge/AWS-FF9900?logo=amazonaws&logoColor=white)](https://aws.amazon.com/)
+[![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?logo=githubactions&logoColor=white)](https://github.com/features/actions)
+
 # Terraform AWS IaC Project
 
 This repository deploys a small AWS stack with Terraform using:
